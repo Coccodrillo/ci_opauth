@@ -1,6 +1,7 @@
 ci_opauth
 =========
 OPauth + CodeIgniter integration.
+Based on https://github.com/uzyn/opauth
 
 
 IMPORTANT FILES.

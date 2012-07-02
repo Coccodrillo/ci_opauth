@@ -3,10 +3,10 @@
  * Opauth Strategy
  * Individual strategies are to be extended from this class
  *
- * @copyright		Copyright © 2012 U-Zyn Chua (http://uzyn.com)
- * @link 			http://opauth.org
- * @package			Opauth.Strategy
- * @license			MIT License
+ * @copyright    Copyright © 2012 U-Zyn Chua (http://uzyn.com)
+ * @link         http://opauth.org
+ * @package      Opauth.Strategy
+ * @license      MIT License
  */
 
 /**
@@ -159,11 +159,11 @@ class OpauthStrategy{
 	 * 
 	 */
 	private function shipToCallback($data, $transport = null){
-		if (empty($transponrt)) $transport = $this->env['callback_transport'];
+		if (empty($transport)) $transport = $this->env['callback_transport'];
 		
 		switch($transport){
 			case 'get':
-				$this->redirect($this->env['callback_url'].'?'.http_build_query(array('opauth' => base64_encode(serialize($data)))));
+				$this->redirect($this->env['callback_url'].'?'.http_build_query(array('opauth' => base64_encode(serialize($data))), '', '&'));
 				break;
 			case 'post':
 				$this->clientPost($this->env['callback_url'], array('opauth' => base64_encode(serialize($data))));
@@ -240,6 +240,35 @@ class OpauthStrategy{
 		return $hash;
 	}
 	
+	/**
+	 * Maps user profile to auth response
+	 * 
+	 * @param array $profile User profile obtained from provider
+	 * @param string $profile_path Path to a $profile property. Use dot(.) to separate levels.
+	 *        eg. Path to $profile['a']['b']['c'] would be 'a.b.c'
+	 * @param string $auth_path Path to $this->auth that is to be set.
+	 */
+	protected function mapProfile($profile, $profile_path, $auth_path){
+		$from = explode('.', $profile_path);
+		
+		$base = $profile;
+		foreach ($from as $element){
+			if (is_array($base) && array_key_exists($element, $base)) $base = $base[$element];
+			else return false;
+		}
+		$value = $base;
+		
+		$to = explode('.', $auth_path);
+		
+		$auth = &$this->auth;
+		foreach ($to as $element){
+			$auth = &$auth[$element];
+		}
+		$auth = $value;
+		return true;
+		
+	}
+	
 		
 	/**
 	 * *****************************************************
@@ -252,7 +281,7 @@ class OpauthStrategy{
 	 * Static hashing funciton
 	 * 
 	 * @param string $input Input string
-	 * @param string $timestamp ISO 8601 formatted date * 
+	 * @param string $timestamp ISO 8601 formatted date
 	 * @param int $iteration Number of hash interations
 	 * @param string $salt
 	 * @return string Resulting hash
@@ -274,6 +303,17 @@ class OpauthStrategy{
 	public static function redirect($url, $exit = true){
 		header("Location: $url");
 		if ($exit) exit();
+	}
+	
+	/**
+	 * Client-side GET: This function builds the full HTTP URL with parameters and redirects via Location header.
+	 * 
+	 * @param string $url Destination URL
+	 * @param array $data Data
+	 * @param boolean $exit Whether to call exit() right after redirection
+	 */
+	public static function clientGet($url, $data = array(), $exit = true){
+		self::redirect($url.'?'.http_build_query($data, '', '&'), $exit);
 	}
 
 	/**
@@ -308,7 +348,7 @@ class OpauthStrategy{
 	 * @return string Content resulted from request, without headers
 	 */
 	public static function serverGet($url, $data, $options = null, &$responseHeaders = null){
-		return self::httpRequest($url.'?'.http_build_query($data), $options, $responseHeaders);
+		return self::httpRequest($url.'?'.http_build_query($data, '', '&'), $options, $responseHeaders);
 	}
 
 	/**
@@ -323,7 +363,7 @@ class OpauthStrategy{
 	public static function serverPost($url, $data, $options = array(), &$responseHeaders = null){
 		if (!is_array($options)) $options = array();
 
-		$query = http_build_query($data);
+		$query = http_build_query($data, '', '&');
 
 		$stream = array('http' => array(
 			'method' => 'POST',
@@ -371,7 +411,9 @@ class OpauthStrategy{
 	* @return array Array of object properties
 	*/
 	public static function recursiveGetObjectVars($obj){
+		$arr = array();
 		$_arr = is_object($obj) ? get_object_vars($obj) : $obj;
+		
 		foreach ($_arr as $key => $val){
 			$val = (is_array($val) || is_object($val)) ? self::recursiveGetObjectVars($val) : $val;
 			

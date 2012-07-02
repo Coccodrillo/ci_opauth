@@ -27,6 +27,10 @@ This file contains most common options to set up opauth:
 ----------
 You need to enable mod_rewrite on your webserver. Change your_app by your app name.
 
+*/application/libraries/Opauth/OpenID/OpenIDStrategy.php
+--------------------------------------------------------
+Changed file to get openid_url from ci_opauth.php config file. If you want to use any openid_url, just review comments on the file.
+
 COMMENTS.
 =========
 This integration only identifies users. If you want to store the data, you must edit the method 'auth/authenticate' 
